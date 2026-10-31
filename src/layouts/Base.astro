@@ -1,7 +1,70 @@
 ---
-const { title = 'QuantDash 量化数据博客' } = Astro.props;
+import '../styles/global.css';
+import { SITE_TITLE, SITE_DESC, LINKS } from '../consts';
+interface Props { title?: string; description?: string; type?: string }
+const { title, description = SITE_DESC, type = 'website' } = Astro.props;
+const fullTitle = title ? `${title} | ${SITE_TITLE}` : SITE_TITLE;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const path = Astro.url.pathname;
+const nav = [['/', '文章'], ['/tags/', '标签'], ['/archive/', '归档'], ['/about/', '关于']];
+const active = (h: string) => (h === '/' ? path === '/' || path.startsWith('/posts') : path.startsWith(h));
 ---
-<html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width"/><title>{title}</title>
-<style>body{max-width:760px;margin:auto;padding:1rem;font-family:system-ui,"PingFang SC",sans-serif;line-height:1.7}nav a{margin-right:1rem}pre{background:#f5f5f5;padding:.8rem;overflow:auto}</style></head>
-<body><header><h2><a href="/">QuantDash 量化数据博客</a></h2><nav><a href="/">首页</a><a href="/archive/">归档</a><a href="/tags/">标签</a><a href="/about/">关于</a><a href="https://docs.quantdash.net/zh-Hans">文档</a></nav></header>
-<main><slot/></main><footer><hr/>数据来自 <a href="https://quantdash.net/">QuantDash</a> · <a href="https://github.com/quantdash-net/QuantDash">GitHub</a></footer></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{fullTitle}</title><meta name="description" content={description} />
+  <link rel="canonical" href={canonical} /><link rel="icon" href="/favicon.ico" sizes="any" /><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" /><link rel="apple-touch-icon" href="/apple-touch-icon.png" /><meta property="og:image" content={new URL("/og-default.png", Astro.site)} /><meta property="og:image:width" content="1200" /><meta property="og:image:height" content="630" /><meta name="twitter:image" content={new URL("/og-default.png", Astro.site)} />
+  <link rel="alternate" type="application/rss+xml" title={SITE_TITLE} href="/rss.xml" />
+  <link rel="sitemap" href="/sitemap-index.xml" />
+  <meta property="og:type" content={type} /><meta property="og:site_name" content={SITE_TITLE} />
+  <meta property="og:title" content={fullTitle} /><meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} /><meta property="og:locale" content="zh_CN" />
+  <meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content={fullTitle} /><meta name="twitter:description" content={description} />
+  <meta name="theme-color" content="#1e3a6e" />
+  <script is:inline>
+    (function(){var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;})();
+  </script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container bar">
+      <a class="brand" href="/"><img class="logo" src="/logo-mark.png" alt="QuantDash" width="26" height="26" /><span>QuantDash<em>Blog</em></span></a>
+      <nav class="nav" id="nav">
+        {nav.map(([h, l]) => <a href={h} class={active(h) ? 'active' : ''}>{l}</a>)}
+        <span class="sep"></span>
+        <a href={LINKS.site} target="_blank" rel="noopener">官网</a>
+        <a href={LINKS.docs} target="_blank" rel="noopener">文档</a>
+        <a href={LINKS.github} target="_blank" rel="noopener">GitHub</a>
+      </nav>
+      <div class="actions">
+        <button class="icon-btn" id="theme-toggle" aria-label="切换暗色/亮色">
+          <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="icon-btn menu-btn" id="menu-toggle" aria-label="菜单">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+  <main><slot /></main>
+  <footer class="site-footer">
+    <div class="container foot">
+      <div>
+        <a class="brand" href="/"><img class="logo" src="/logo-mark.png" alt="QuantDash" width="22" height="22" /><span>QuantDash<em>Blog</em></span></a>
+        <p class="muted">专业金融数据平台：A 股（沪深京）、ETF、美股、港股的 RESTful API 与 Python SDK。</p>
+      </div>
+      <div class="foot-links">
+        <div><h4>产品</h4><a href={LINKS.site}>官网</a><a href={LINKS.docs}>中文文档</a><a href={LINKS.github}>Python SDK</a></div>
+        <div><h4>博客</h4><a href="/archive/">归档</a><a href="/tags/">标签</a><a href="/rss.xml">RSS 订阅</a></div>
+      </div>
+    </div>
+    <div class="container copy muted">© {new Date().getFullYear()} QuantDash. 内容仅供学习参考，不构成投资建议。</div>
+  </footer>
+  <script is:inline>
+    document.getElementById('theme-toggle').addEventListener('click',function(){var r=document.documentElement,t=r.dataset.theme==='dark'?'light':'dark';r.dataset.theme=t;localStorage.setItem('theme',t);});
+    document.getElementById('menu-toggle').addEventListener('click',function(){document.getElementById('nav').classList.toggle('open');});
+  </script>
+</body>
+</html>

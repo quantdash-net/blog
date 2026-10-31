@@ -1,5 +1,10 @@
 ---
-import Base from '../layouts/Base.astro'; import { getCollection } from 'astro:content';
-const posts=(await getCollection('posts')).sort((a,b)=>b.data.date-a.data.date);
+import Base from '../layouts/Base.astro'; import { sortedPosts, fmtDate } from '../utils';
+const posts = await sortedPosts();
+const years = [...new Set(posts.map(p => p.data.date.getFullYear()))];
 ---
-<Base title="归档"><h1>归档</h1><ul>{posts.map(p=><li>{p.data.date.toISOString().slice(0,10)} <a href={`/posts/${p.id}/`}>{p.data.title}</a></li>)}</ul></Base>
+<Base title="归档">
+  <div class="container page"><h1 class="page-title">归档</h1><p class="muted">共 {posts.length} 篇文章</p>
+  {years.map(y => <section class="year"><h2>{y}</h2><ul class="list">{posts.filter(p => p.data.date.getFullYear() === y).map(p => <li><time>{fmtDate(p.data.date).slice(5)}</time><a href={`/posts/${p.id}/`}>{p.data.title}</a></li>)}</ul></section>)}
+  </div>
+</Base>

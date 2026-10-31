@@ -1,6 +1,30 @@
 ---
-import Base from '../../layouts/Base.astro'; import { getCollection, render } from 'astro:content';
-export async function getStaticPaths(){ return (await getCollection('posts')).map(p=>({params:{id:p.id},props:{p}})); }
-const { p } = Astro.props; const { Content } = await render(p);
+import Base from '../../layouts/Base.astro'; import { render } from 'astro:content';
+import { sortedPosts, fmtDate, readingTime } from '../../utils';
+export async function getStaticPaths() {
+  const ps = await sortedPosts();
+  return ps.map((p, i) => ({ params: { id: p.id }, props: { p, newer: ps[i - 1], older: ps[i + 1] } }));
+}
+const { p, newer, older } = Astro.props;
+const { Content, headings } = await render(p);
+const toc = headings.filter(h => h.depth >= 2 && h.depth <= 3);
 ---
-<Base title={p.data.title}><h1>{p.data.title}</h1><small>{p.data.date.toISOString().slice(0,10)} · {p.data.tags.map(t=><a href={`/tags/${t}/`}>#{t} </a>)}</small><Content/></Base>
+<Base title={p.data.title} description={p.data.description} type="article">
+  <div class="container post-wrap">
+    <article class="post">
+      <header class="post-head">
+        <a class="back" href="/">← 全部文章</a>
+        <div class="tags">{p.data.tags.map(t => <a class="tag" href={`/tags/${t}/`}>#{t}</a>)}</div>
+        <h1>{p.data.title}</h1>
+        <p class="lead">{p.data.description}</p>
+        <div class="meta"><time datetime={p.data.date.toISOString()}>{fmtDate(p.data.date)}</time><span>·</span><span>{readingTime(p.body)} 分钟阅读</span></div>
+      </header>
+      <div class="prose"><Content /></div>
+      <nav class="pager">
+        {older ? <a href={`/posts/${older.id}/`}><small>← 上一篇</small><span>{older.data.title}</span></a> : <span></span>}
+        {newer ? <a class="next" href={`/posts/${newer.id}/`}><small>下一篇 →</small><span>{newer.data.title}</span></a> : <span></span>}
+      </nav>
+    </article>
+    {toc.length > 0 && <aside class="toc"><div class="toc-inner"><h4>目录</h4>{toc.map(h => <a class={`d${h.depth}`} href={`#${h.slug}`}>{h.text}</a>)}</div></aside>}
+  </div>
+</Base>

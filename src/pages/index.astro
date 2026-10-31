@@ -1,6 +1,25 @@
 ---
-import Base from '../layouts/Base.astro'; import { getCollection } from 'astro:content';
-const posts = (await getCollection('posts')).sort((a,b)=>b.data.date-a.data.date);
+import Base from '../layouts/Base.astro'; import PostCard from '../components/PostCard.astro';
+import { sortedPosts } from '../utils'; import { LINKS } from '../consts';
+const posts = await sortedPosts();
+const tags = [...new Set(posts.flatMap(p => p.data.tags))];
 ---
-<Base><p>QuantDash 金融数据 API + Python SDK 的教程与更新：A股/美股/港股的 K 线、行情快照、盘口、分时。</p>
-{posts.map(p=><article><h3><a href={`/posts/${p.id}/`}>{p.data.title}</a></h3><small>{p.data.date.toISOString().slice(0,10)}</small><p>{p.data.description}</p></article>)}</Base>
+<Base>
+  <section class="hero">
+    <div class="grid-bg" aria-hidden="true"></div>
+    <div class="container hero-inner">
+      <span class="eyebrow"><i></i>QuantDash 官方博客</span>
+      <h1>用数据，<span class="grad">驱动量化研究</span></h1>
+      <p class="lead">QuantDash 金融数据 API 与 Python SDK 的教程与更新：A 股 / 美股 / 港股的 K 线、行情快照、五档盘口与日内分时。</p>
+      <div class="cta">
+        <a class="btn primary" href={LINKS.docs} target="_blank" rel="noopener">阅读文档</a>
+        <a class="btn" href={LINKS.github} target="_blank" rel="noopener">Python SDK →</a>
+      </div>
+      <div class="chips">{['A 股', 'ETF', '美股', '港股', 'K 线', '实时行情', '五档盘口', '日内分时'].map(c => <span>{c}</span>)}</div>
+    </div>
+  </section>
+  <section class="container section">
+    <div class="section-head"><h2>最新文章</h2><div class="tags">{tags.map(t => <a class="tag" href={`/tags/${t}/`}>#{t}</a>)}</div></div>
+    <div class="cards">{posts.map(p => <PostCard post={p} />)}</div>
+  </section>
+</Base>
