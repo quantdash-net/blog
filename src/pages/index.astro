@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro'; import PostCard from '../components/PostCard.astro';
-import { sortedPosts } from '../utils'; import { LINKS } from '../consts';
+import { sortedPosts } from '../utils'; import { LINKS, CATEGORIES } from '../consts';
 const posts = await sortedPosts();
 const tags = [...new Set(posts.flatMap(p => p.data.tags))];
 ---
@@ -19,7 +19,18 @@ const tags = [...new Set(posts.flatMap(p => p.data.tags))];
     </div>
   </section>
   <section class="container section">
-    <div class="section-head"><h2>最新文章</h2><div class="tags">{tags.map(t => <a class="tag" href={`/tags/${t}/`}>#{t}</a>)}</div></div>
-    <div class="cards">{posts.map(p => <PostCard post={p} />)}</div>
+    <div class="section-head"><h2>最新文章</h2><a class="back" href="/categories/">全部分类 →</a></div>
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-f="all">全部 <sup>{posts.length}</sup></button>
+      {CATEGORIES.map(c => <button class={`tab tab-${c.color}`} data-f={c.name}>{c.name} <sup>{posts.filter(p => p.data.category === c.name).length}</sup></button>)}
+    </div>
+    <div class="cards" id="cards">{posts.map(p => <PostCard post={p} />)}</div>
+    <div class="empty" id="empty" hidden>这个分类还没有文章，敬请期待。</div>
   </section>
+  <script is:inline>
+    document.querySelectorAll('.tab').forEach(function(b){b.addEventListener('click',function(){
+      document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('active',x===b)});
+      var f=b.dataset.f,n=0;document.querySelectorAll('#cards .card').forEach(function(c){var s=f==='all'||c.dataset.cat===f;c.style.display=s?'':'none';if(s)n++;});
+      document.getElementById('empty').hidden=n>0;});});
+  </script>
 </Base>

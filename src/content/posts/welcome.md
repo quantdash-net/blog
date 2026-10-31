@@ -2,6 +2,7 @@
 title: 欢迎来到 QuantDash 博客
 description: QuantDash 是什么、能提供哪些数据，以及从哪里开始。
 date: 2026-10-31
+category: 版本更新
 tags: [公告, 入门]
 ---
 QuantDash 是专业金融数据平台，为量化研究者和开发者提供金融市场数据 API，覆盖 **A 股（沪深京）、ETF、美股、港股**，通过 RESTful API 与 Python SDK 提供服务。
