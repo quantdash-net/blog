@@ -1,5 +1,5 @@
 ---
-import Base from '../../layouts/Base.astro'; import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro'; import CategoryBadge from '../../components/CategoryBadge.astro'; import { render } from 'astro:content';
 import { sortedPosts, fmtDate, readingTime } from '../../utils';
 export async function getStaticPaths() {
   const ps = await sortedPosts();
@@ -14,7 +14,7 @@ const toc = headings.filter(h => h.depth >= 2 && h.depth <= 3);
     <article class="post">
       <header class="post-head">
         <a class="back" href="/">← 全部文章</a>
-        <div class="tags">{p.data.tags.map(t => <a class="tag" href={`/tags/${t}/`}>#{t}</a>)}</div>
+        <div class="tags"><CategoryBadge name={p.data.category} />{p.data.tags.map(t => <a class="tag" href={`/tags/${t}/`}>#{t}</a>)}</div>
         <h1>{p.data.title}</h1>
         <p class="lead">{p.data.description}</p>
         <div class="meta"><time datetime={p.data.date.toISOString()}>{fmtDate(p.data.date)}</time><span>·</span><span>{readingTime(p.body)} 分钟阅读</span></div>

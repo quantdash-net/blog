@@ -1,0 +1,12 @@
+---
+import Base from '../../layouts/Base.astro'; import { CATEGORIES } from '../../consts'; import { sortedPosts } from '../../utils';
+const ps = await sortedPosts();
+---
+<Base title="分类" description="按内容类型浏览 QuantDash 博客：版本更新、接口教程、量化实战、常见问题。">
+  <div class="container page"><h1 class="page-title">分类</h1><p class="muted">按内容类型浏览全部文章</p>
+  <div class="cat-grid">{CATEGORIES.map(c => { const n = ps.filter(p => p.data.category === c.name).length; return (
+    <a class={`cat-card cat-${c.color}`} href={`/categories/${c.slug}/`}>
+      <div class="cat-top"><span class={`cat cat-${c.color}`}>{c.name}</span><span class="count">{n} 篇</span></div>
+      <p>{c.desc}</p><span class="more">查看文章 →</span>
+    </a>); })}</div></div>
+</Base>

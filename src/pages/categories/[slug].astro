@@ -1,0 +1,12 @@
+---
+import Base from '../../layouts/Base.astro'; import PostCard from '../../components/PostCard.astro';
+import { CATEGORIES } from '../../consts'; import { sortedPosts } from '../../utils';
+export async function getStaticPaths() { const ps = await sortedPosts(); return CATEGORIES.map(c => ({ params: { slug: c.slug }, props: { c, ps: ps.filter(p => p.data.category === c.name) } })); }
+const { c, ps } = Astro.props;
+---
+<Base title={`分类：${c.name}`} description={c.desc}>
+  <div class="container page"><a class="back" href="/categories/">← 全部分类</a>
+  <h1 class="page-title"><span class={`cat cat-${c.color} lg`}>{c.name}</span></h1><p class="muted">{c.desc} · 共 {ps.length} 篇</p>
+  {ps.length ? <div class="cards">{ps.map(p => <PostCard post={p} />)}</div> : <div class="empty">这个分类还没有文章，敬请期待。</div>}
+  </div>
+</Base>

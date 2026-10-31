@@ -1,9 +1,10 @@
 ---
 import { fmtDate, readingTime } from '../utils';
+import CategoryBadge from './CategoryBadge.astro';
 const { post } = Astro.props;
 ---
-<a class="card" href={`/posts/${post.id}/`}>
-  <div class="meta"><time datetime={post.data.date.toISOString()}>{fmtDate(post.data.date)}</time><span>·</span><span>{readingTime(post.body)} 分钟阅读</span></div>
+<a class="card" data-cat={post.data.category} href={`/posts/${post.id}/`}>
+  <div class="meta"><CategoryBadge name={post.data.category} link={false} /><time datetime={post.data.date.toISOString()}>{fmtDate(post.data.date)}</time><span>·</span><span>{readingTime(post.body)} 分钟阅读</span></div>
   <h3>{post.data.title}</h3>
   <p>{post.data.description}</p>
   <div class="tags">{post.data.tags.map((t: string) => <span class="tag">#{t}</span>)}</div>

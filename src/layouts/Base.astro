@@ -6,7 +6,7 @@ const { title, description = SITE_DESC, type = 'website' } = Astro.props;
 const fullTitle = title ? `${title} | ${SITE_TITLE}` : SITE_TITLE;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const path = Astro.url.pathname;
-const nav = [['/', '文章'], ['/tags/', '标签'], ['/archive/', '归档'], ['/about/', '关于']];
+const nav = [['/', '文章'], ['/categories/', '分类'], ['/tags/', '标签'], ['/archive/', '归档'], ['/about/', '关于']];
 const active = (h: string) => (h === '/' ? path === '/' || path.startsWith('/posts') : path.startsWith(h));
 ---
 <!doctype html>
@@ -57,7 +57,7 @@ const active = (h: string) => (h === '/' ? path === '/' || path.startsWith('/pos
       </div>
       <div class="foot-links">
         <div><h4>产品</h4><a href={LINKS.site}>官网</a><a href={LINKS.docs}>中文文档</a><a href={LINKS.github}>Python SDK</a></div>
-        <div><h4>博客</h4><a href="/archive/">归档</a><a href="/tags/">标签</a><a href="/rss.xml">RSS 订阅</a></div>
+        <div><h4>博客</h4><a href="/categories/">分类</a><a href="/archive/">归档</a><a href="/tags/">标签</a><a href="/rss.xml">RSS 订阅</a></div>
       </div>
     </div>
     <div class="container copy muted">© {new Date().getFullYear()} QuantDash. 内容仅供学习参考，不构成投资建议。</div>

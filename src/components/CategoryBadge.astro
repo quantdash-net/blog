@@ -1,0 +1,5 @@
+---
+import { catOf } from '../consts';
+const c = catOf(Astro.props.name); const { link = true } = Astro.props;
+---
+{link ? <a class={`cat cat-${c.color}`} href={`/categories/${c.slug}/`}>{c.name}</a> : <span class={`cat cat-${c.color}`}>{c.name}</span>}
