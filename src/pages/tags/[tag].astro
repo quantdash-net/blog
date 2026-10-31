@@ -1,0 +1,6 @@
+---
+import Base from '../../layouts/Base.astro'; import { getCollection } from 'astro:content';
+export async function getStaticPaths(){ const ps=await getCollection('posts'); return [...new Set(ps.flatMap(p=>p.data.tags))].map(tag=>({params:{tag},props:{ps:ps.filter(p=>p.data.tags.includes(tag))}})); }
+const { tag } = Astro.params; const { ps } = Astro.props;
+---
+<Base title={`标签：${tag}`}><h1>#{tag}</h1><ul>{ps.map(p=><li><a href={`/posts/${p.id}/`}>{p.data.title}</a></li>)}</ul></Base>

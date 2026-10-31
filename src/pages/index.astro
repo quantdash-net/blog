@@ -1,0 +1,6 @@
+---
+import Base from '../layouts/Base.astro'; import { getCollection } from 'astro:content';
+const posts = (await getCollection('posts')).sort((a,b)=>b.data.date-a.data.date);
+---
+<Base><p>QuantDash 金融数据 API + Python SDK 的教程与更新：A股/美股/港股的 K 线、行情快照、盘口、分时。</p>
+{posts.map(p=><article><h3><a href={`/posts/${p.id}/`}>{p.data.title}</a></h3><small>{p.data.date.toISOString().slice(0,10)}</small><p>{p.data.description}</p></article>)}</Base>

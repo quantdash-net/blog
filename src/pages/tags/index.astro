@@ -1,0 +1,5 @@
+---
+import Base from '../../layouts/Base.astro'; import { getCollection } from 'astro:content';
+const tags=[...new Set((await getCollection('posts')).flatMap(p=>p.data.tags))];
+---
+<Base title="标签"><h1>标签</h1><ul>{tags.map(t=><li><a href={`/tags/${t}/`}>{t}</a></li>)}</ul></Base>

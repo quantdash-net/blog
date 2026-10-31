@@ -1,0 +1,5 @@
+---
+import Base from '../layouts/Base.astro'; import { getCollection } from 'astro:content';
+const posts=(await getCollection('posts')).sort((a,b)=>b.data.date-a.data.date);
+---
+<Base title="归档"><h1>归档</h1><ul>{posts.map(p=><li>{p.data.date.toISOString().slice(0,10)} <a href={`/posts/${p.id}/`}>{p.data.title}</a></li>)}</ul></Base>

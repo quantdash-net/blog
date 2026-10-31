@@ -1,0 +1,7 @@
+---
+const { title = 'QuantDash 量化数据博客' } = Astro.props;
+---
+<html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width"/><title>{title}</title>
+<style>body{max-width:760px;margin:auto;padding:1rem;font-family:system-ui,"PingFang SC",sans-serif;line-height:1.7}nav a{margin-right:1rem}pre{background:#f5f5f5;padding:.8rem;overflow:auto}</style></head>
+<body><header><h2><a href="/">QuantDash 量化数据博客</a></h2><nav><a href="/">首页</a><a href="/archive/">归档</a><a href="/tags/">标签</a><a href="/about/">关于</a><a href="https://docs.quantdash.net/zh-Hans">文档</a></nav></header>
+<main><slot/></main><footer><hr/>数据来自 <a href="https://quantdash.net/">QuantDash</a> · <a href="https://github.com/quantdash-net/QuantDash">GitHub</a></footer></body></html>

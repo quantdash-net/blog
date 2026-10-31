@@ -1,0 +1,6 @@
+---
+import Base from '../../layouts/Base.astro'; import { getCollection, render } from 'astro:content';
+export async function getStaticPaths(){ return (await getCollection('posts')).map(p=>({params:{id:p.id},props:{p}})); }
+const { p } = Astro.props; const { Content } = await render(p);
+---
+<Base title={p.data.title}><h1>{p.data.title}</h1><small>{p.data.date.toISOString().slice(0,10)} · {p.data.tags.map(t=><a href={`/tags/${t}/`}>#{t} </a>)}</small><Content/></Base>
