@@ -1,11 +1,27 @@
 ---
 import '../styles/global.css';
 import { SITE_TITLE, SITE_DESC, LINKS } from '../consts';
-interface Props { title?: string; description?: string; type?: string }
-const { title, description = SITE_DESC, type = 'website' } = Astro.props;
+interface Props { title?: string; description?: string; type?: string; jsonLd?: unknown }
+const { title, description = SITE_DESC, type = 'website', jsonLd } = Astro.props;
 const fullTitle = title ? `${title} | ${SITE_TITLE}` : SITE_TITLE;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const path = Astro.url.pathname;
+const publisher = { '@type': 'Organization', name: 'QuantDash', url: 'https://quantdash.net' };
+const siteJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      name: SITE_TITLE,
+      url: new URL('/', Astro.site).href,
+      description: SITE_DESC,
+      inLanguage: 'zh-CN',
+      publisher,
+    },
+    publisher,
+  ],
+};
+const jsonLdHtml = (data: unknown) => JSON.stringify(data).replace(/</g, '\\u003c');
 const nav = [['/', '文章'], ['/categories/', '分类'], ['/tags/', '标签'], ['/archive/', '归档'], ['/about/', '关于']];
 const active = (h: string) => (h === '/' ? path === '/' || path.startsWith('/posts') : path.startsWith(h));
 ---
@@ -22,6 +38,8 @@ const active = (h: string) => (h === '/' ? path === '/' || path.startsWith('/pos
   <meta property="og:url" content={canonical} /><meta property="og:locale" content="zh_CN" />
   <meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content={fullTitle} /><meta name="twitter:description" content={description} />
   <meta name="theme-color" content="#1e3a6e" />
+  <script type="application/ld+json" is:inline set:html={jsonLdHtml(siteJsonLd)} />
+  {jsonLd && <script type="application/ld+json" is:inline set:html={jsonLdHtml(jsonLd)} />}
   <script is:inline>
     (function(){var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;})();
   </script>
