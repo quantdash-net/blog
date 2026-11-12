@@ -8,8 +8,26 @@ export async function getStaticPaths() {
 const { p, newer, older } = Astro.props;
 const { Content, headings } = await render(p);
 const toc = headings.filter(h => h.depth >= 2 && h.depth <= 3);
+const pubDate = p.data.date.toISOString();
+const dateModified = pubDate;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const publisher = { '@type': 'Organization', name: 'QuantDash', url: 'https://quantdash.net' };
+const ogImage = new URL('/og-default.png', Astro.site).href;
+const blogPosting = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: p.data.title,
+  description: p.data.description,
+  datePublished: pubDate,
+  dateModified,
+  author: publisher,
+  publisher,
+  mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
+  inLanguage: 'zh-CN',
+  image: ogImage,
+};
 ---
-<Base title={p.data.title} description={p.data.description} type="article">
+<Base title={p.data.title} description={p.data.description} type="article" jsonLd={blogPosting}>
   <div class="container post-wrap">
     <article class="post">
       <header class="post-head">
