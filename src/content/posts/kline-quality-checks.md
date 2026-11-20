@@ -17,10 +17,9 @@ tags: [数据质量, K线, 复权]
 
 ## 用示例数字检查列式结构
 
-检查函数不访问网络。下面的数组是构造出来的，用来说明怎样拦住缺字段、乱序和高低价装不下开收盘的情况。
+下面的数组是构造出来的示例，用来拦住缺字段、乱序，以及最高价装不下开盘和收盘的情况。它不是某次接口返回。
 
 ```python
-# local-check
 REQUIRED_KLINE_FIELDS = ("timestamp", "open", "high", "low", "close", "volume", "amount")
 
 
@@ -76,7 +75,6 @@ Python SDK 0.1.0 在 `to_dataframe=True` 时还会做这些事：
 `trade_date` 由毫秒时间戳按代码后缀的时区格式化。检查时可以重算一遍，和返回列对比：
 
 ```python
-# local-check
 def trade_dates_match(symbol: str, timestamps: list[int], trade_dates: list[str]) -> list[str]:
     issues = []
     for i, (ts, label) in enumerate(zip(timestamps, trade_dates)):

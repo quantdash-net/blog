@@ -45,10 +45,9 @@ AKShare 在你本机运行，从公开网页采集数据。[项目说明](https:
 
 ## 收成一个入口
 
-下面两个函数只处理代码和上海时区的日历日窗口，用的是示例输入，不访问网络。
+下面两个函数只处理代码和上海时区的日历日窗口。输入是示例，用来对齐日期，不是行情。
 
 ```python
-# local-check
 from datetime import datetime
 from zoneinfo import ZoneInfo
 

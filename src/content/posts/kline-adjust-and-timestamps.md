@@ -32,7 +32,6 @@ Python SDK 0.1.0 的 `klines.get` 只有在你传入 `adjust` 时才会把这个
 下面的价格是为了把两种算法分开而设的，不是某只股票的行情，也不是文档里的 `ex_factor` 公式。假设除权前两天的价格是 20 和 22，除权日价格是 11，按 2 合 1 把除权前的价格分别乘 0.5、减 11：
 
 ```python
-# local-check
 def simple_returns(prices: list[float]) -> list[float | None]:
     out: list[float | None] = [None]
     for prev, cur in zip(prices, prices[1:]):
@@ -48,7 +47,7 @@ def shift_before(prices: list[float], delta: float, event_at: int) -> list[float
     return [p + delta if i < event_at else p for i, p in enumerate(prices)]
 ```
 
-除权发生在下标 2。比例法得到 `[10, 11, 11]`，除权前一天的收益率仍是 `11/10 - 1`，即 10%。差值法得到 `[9, 11, 11]`，同一段收益率变成 `11/9 - 1`。不复权序列 `[20, 22, 11]` 的最后一段则会把拆分造成的价格跳变算进收益率。这和文档里“比例适合收益率、差值适合绝对价差”的分工一致；它不表示 QuantDash 内部就是用 0.5 或 11 这两个数。
+除权发生在下标 2。比例法得到 `[10, 11, 11]`，除权前一天的收益率仍是 `11/10 - 1`，即 10%。差值法得到 `[9, 11, 11]`，同一段收益率变成 `11/9 - 1`。不复权序列 `[20, 22, 11]` 的最后一段则会把拆分造成的价格跳变算进收益率。这和“比例适合收益率、差值适合绝对价差”的分工一致。0.5 和 11 只是这组假设价格里的数，不是接口里的除权因子。
 
 ## 时间参数是毫秒，两端都包含
 
@@ -56,10 +55,9 @@ OpenAPI 对 `start_time` 和 `end_time` 的说明是起始、结束时间戳（�
 
 SDK 0.1.0 生成 `trade_date` 和 `trade_time` 时，按代码后缀选择时区：`.SH`、`.SZ`、`.BJ` 用 `Asia/Shanghai`，`.HK` 用 `Asia/Hong_Kong`，`.US` 用 `America/New_York`。认不出的后缀这两列为空，`timestamp` 仍是毫秒整数。
 
-同一个毫秒，用不同后缀显示，日历日期可能不同。下面的换算使用标准库，数字对应 UTC 环境；它说明时区差，不是某次接口返回。
+同一个毫秒，用不同后缀显示，日历日期可能不同。下面按 UTC 机器上的标准库换算给出数字，说明的是时区差，不是某次接口返回。
 
 ```python
-# local-check
 from datetime import datetime
 from zoneinfo import ZoneInfo
 

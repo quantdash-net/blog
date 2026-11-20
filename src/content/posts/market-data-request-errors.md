@@ -23,10 +23,9 @@ K 线接口的 OpenAPI 同样只列出这三个错误。[429 的响应体](https
 
 Key 放在请求头 `X-API-Key`。文档也允许查询参数 `api_key`，那是给浏览器临时调试的。脚本使用请求头，避免 Key 出现在 shell 历史和访问日志的 URL 里。不要把真实 Key 写进代码。
 
-下面的函数只根据状态码和响应体决定下一步。本文用符合上述结构的假 JSON 执行过，没有发送 HTTP 请求。
+下面的函数只根据状态码和响应体决定下一步。429 的例子按接口规定带上 `retry_after_ms`。
 
 ```python
-# local-check
 def rest_action(status: int, body: dict) -> str:
     """返回 ok、stop、retry，或 wait:<毫秒>。"""
     if status in (401, 403) or status == 400 or status == 404:

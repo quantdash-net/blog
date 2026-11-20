@@ -16,7 +16,6 @@ tags: [回测, 复权, K线, 数据质量]
 文档没有“这根 K 线是否已完成”的字段，也没有写日 K 的 `timestamp` 对应开盘、收盘还是交易日零点。交易时段以交易所规则为准，不要把某个钟点写死成接口参数。可以做的是：在研究“已收盘的日收益”时，去掉交易日等于当前市场日期的那一行，等收盘后再单独补。当前市场日期用代码后缀对应的时区计算，和 SDK 0.1.0 显示 `trade_date` 的方式一致。
 
 ```python
-# local-check
 def completed_sessions(rows: list[dict], session_date: str) -> list[dict]:
     """去掉 trade_date 等于当前交易日的行。不判断当时是否已经收盘。"""
     return [row for row in rows if row["trade_date"] != session_date]
@@ -35,7 +34,6 @@ def completed_sessions(rows: list[dict], session_date: str) -> list[dict]:
 差值复权适合文档所说的绝对价差。两种算法在除权前的收益率可以不同。下面仍是假设价格：除权前是 20 和 22，除权日是 11。比例法把除权前乘 0.5，差值法把除权前减 11。
 
 ```python
-# local-check
 def simple_returns(prices: list[float]) -> list[float | None]:
     out: list[float | None] = [None]
     for prev, cur in zip(prices, prices[1:]):
@@ -43,7 +41,7 @@ def simple_returns(prices: list[float]) -> list[float | None]:
     return out
 ```
 
-比例序列 `[10, 11, 11]` 的第一段收益是 10%，与不复权的 `22/20 - 1` 相同。差值序列 `[9, 11, 11]` 的第一段收益是 `11/9 - 1`。最后一段里，不复权从 22 到 11 会把价格跳变算进去。这组数字只说明“先选定算法再算收益”，不是 QuantDash 的复权实现，也不是回测业绩。
+比例序列 `[10, 11, 11]` 的第一段收益是 10%，与不复权的 `22/20 - 1` 相同。差值序列 `[9, 11, 11]` 的第一段收益是 `11/9 - 1`。最后一段里，不复权从 22 到 11 会把价格跳变算进去。这组数字是假设的，用来看比例和差值两种算法差在哪里。它不是我们内部的复权公式，也不是某次回测业绩。
 
 `ex_factor` 的算式没有在文档中公布。回测代码不要自行发明一个乘法去替代 `adjust` 参数。需要点对点的历史价格时，保留 `adjust="none"` 的原始序列，并把当时能知道的因子日期单独记下。因子接口支持用 `end_time` 过滤，这只说明可以按时间截取因子记录，不说明截取之后应该怎么乘。
 
@@ -57,15 +55,15 @@ AKShare 写明，他们的前复权价会在新的除权之后变化，长期分
 
 ## 成交额单位不能沿用另一家的文档
 
-把多个来源接进同一个回测时，单位要先对齐。[Tushare daily](https://tushare.pro/document/2?doc_id=27) 写明成交量是手、成交额是千元，并且该接口是未复权。[AKShare 的 stock_zh_a_hist_em](https://akshare.akfamily.xyz/data/stock/stock_quote.html) 写明成交量是手、成交额是元。QuantDash 的 `volume` 和 `amount` 没有单位说明。
+把多个来源接进同一个回测时，单位要先对齐。[Tushare daily](https://tushare.pro/document/2?doc_id=27) 写明成交量是手、成交额是千元，并且该接口是未复权。[AKShare 的 stock_zh_a_hist_em](https://akshare.akfamily.xyz/data/stock/stock_quote.html) 写明成交量是手、成交额是元。我们的 `volume` 和 `amount` 只标明是成交量和成交额，没有写成手或元。
 
-官方示例里有一条日内 VWAP：`amount / (volume * 100)`。那是 [示例代码页](https://docs.quantdash.net/zh-Hans/sdk/python-examples.md) 中的表达式，不是字段单位定义。在单位被写进字段说明之前，回测不要借用这个 100，也不要把 Tushare 的千元换算套到 QuantDash 的 `amount` 上。
+[示例代码](https://docs.quantdash.net/zh-Hans/sdk/python-examples.md) 里有一条日内 VWAP：`amount / (volume * 100)`。那是示例里的算法，不是字段单位。单位写进说明之前，回测不要借用这个 100，也不要把 Tushare 的千元换算套到我们的 `amount` 上。
 
 涨跌幅同样容易差一个数量级。快照字段 `ext.change_pct` 在 SDK 快速开始的示例中以小数出现。展示成百分比时再乘 100。不要把这个小数和 Tushare `daily` 里已经是百分数的 `pct_chg` 放进同一个阈值。
 
 ## 时间戳跨市场不能共用一个日历日
 
-同一毫秒，按 `.SH` 格式化与按 `.US` 格式化，可以落在不同的日历日。写作环境是 UTC 时，上海 2026-05-01 零点的毫秒是 `1777564800000`；这个毫秒在美东是 `2026-04-30 12:00:00`。换算过程见 [复权参数和时间戳](/posts/kline-adjust-and-timestamps/)。
+同一个毫秒，按 `.SH` 显示和按 `.US` 显示，可以落在不同的日历日。机器时区是 UTC 时，上海 2026-05-01 零点的毫秒是 `1777564800000`，这个瞬间在美东是 `2026-04-30 12:00:00`。换算见 [复权参数和时间戳](/posts/kline-adjust-and-timestamps/)。
 
 多市场回测若先把所有 `timestamp` 转成 UTC 的日期再对齐，A 股和美股的“同一天”会对错。对齐键应使用各自市场时区下的交易日，并且在会话没有重叠时不要把两根 K 线当成同时可交易。
 
