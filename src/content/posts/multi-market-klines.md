@@ -5,7 +5,7 @@ date: 2026-11-01
 category: 接口教程
 tags: [K线, Python SDK, 多市场, 入门]
 ---
-做多市场研究时，最烦的往往不是策略本身，而是每个市场一套取数方式。QuantDash 的 K 线接口在 A 股、ETF、港股、美股上用的是**同一个调用**，区别只在标的代码。本文用官方示例仓库里的 [`multi_market_klines.py`](https://github.com/quantdash-net/QuantDash/blob/main/multi_market_klines.py) 讲清楚怎么用。
+做多市场研究时，最耽误时间的往往是每个市场一套取数方式。我们的日 K 在 A 股、ETF、港股、美股上用**同一个调用**，区别只在标的代码。下面按示例仓库里的 [`multi_market_klines.py`](https://github.com/quantdash-net/QuantDash/blob/main/multi_market_klines.py) 走一遍。
 
 ## 准备工作
 

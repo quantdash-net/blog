@@ -5,9 +5,9 @@ date: 2026-11-12
 category: 接口教程
 tags: [Python SDK, K线, 实时行情, pandas, 入门]
 ---
-上一篇 [klines.get 入门](/posts/multi-market-klines/) 讲了"一个调用取四个市场的日 K"。这篇往前后各延伸一步：前面补上环境搭建和鉴权的规范做法，后面补上时间区间、批量、日内分时、实时快照和 pandas 处理，最后把它们组织成一个**可以直接放进项目里的取数模块**。
+上一篇 [klines.get 入门](/posts/multi-market-klines/) 讲了用一个调用取四个市场的日 K。这篇把环境、鉴权、时间区间、批量、日内分时、实时快照和 pandas 收成一个可以直接放进项目的取数模块。
 
-本文所有接口名、参数和取值都来自 [QuantDash 中文文档](https://docs.quantdash.net/zh-Hans) 的 Python SDK 快速开始页和 API 参考。代码示例中的 API Key 一律从环境变量读取，请不要把真实 Key 写进代码或提交到 Git。
+参数和取值以我们的 [中文文档](https://docs.quantdash.net/zh-Hans) 为准。示例里的 API Key 从环境变量读取，不要写进代码或提交到 Git。
 
 ## 第一步：准备 Python 环境
 
