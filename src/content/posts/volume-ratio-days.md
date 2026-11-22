@@ -9,9 +9,9 @@ tags: [成交量, K线, pandas]
 
 分子和分母都用同一次 `klines.get` 返回的 `volume`。不必先把它换成手或股。不要和另一家接口的成交量放进同一个分母。
 
-## 和示例页的滚动均量不同
+## 分母是此前 20 根
 
-[示例代码](https://docs.quantdash.net/zh-Hans/sdk/python-examples.md) 用 `volume.rolling(20).mean()` 做分母。那个 20 根窗口含有当天自己。本文的分母是当天之前的 20 根，当天的放量不会先进入平均。两个数不会相同，不要把本文的结果说成示例页上的那个比值。
+分母用这一根之前的 20 根 `volume`，不含当天。当天的放量不会先进入平均。把当天也放进这 20 根，分母会变，比值也不同。
 
 ```python
 def relative_to_prior_20(volumes: list[float]) -> list[float | None]:
@@ -32,7 +32,7 @@ def highest_days(rows: list[dict], n: int = 3) -> list[dict]:
     return sorted(scored, key=lambda row: row["rel20"], reverse=True)[:n]
 ```
 
-下面的成交量是示例：前 20 根是 100，下一根是 300。那一根相对此前 20 根均量是 3。若把当天也放进 20 根窗口，分母就不再是 100。
+下面的成交量是示例：前 20 根是 100，下一根是 300。那一根相对此前 20 根均量是 3。
 
 ```python
 import os
@@ -57,8 +57,8 @@ frame["rel20"] = relative_to_prior_20(frame["volume"].tolist())
 
 答：只表示这一根的成交量高于它前面 20 根的平均。它不是按开市时间折算的量比，也不是资金流向或策略收益。
 
-**问：为什么不直接用示例页的 rolling(20)？**
+**问：为什么分母不含当天？**
 
-答：可以用，但那个窗口含当天。本文要的是“和此前 20 根比”，所以分母不含当天。两套数请分开命名。
+答：分母表示这一根之前的成交量水平。把当天放进去，当天的放量会先抬高平均。
 
 > 日线来自 [获取 K 线](https://docs.quantdash.net/zh-hans/api-reference/k线数据/获取k线数据.md)。示例数量不是行情。
