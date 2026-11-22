@@ -32,8 +32,6 @@ frame = qd.klines.intraday(
 
 按 `timestamp` 排序之后：起点用最早一根的 `open`，最高用全部 `high` 的最大，最低用全部 `low` 的最小，终点用最晚一根的 `close`。最早一根不一定是当天第一分钟，最晚一根在盘中还会变。不要把这两个价格叫做全日开盘价和收盘价。
 
-下面四根是构造的示例，用来看排序，不是接口返回。
-
 ```python
 def returned_range(rows: list[dict]) -> dict | None:
     if not rows:
@@ -46,6 +44,17 @@ def returned_range(rows: list[dict]) -> dict | None:
         "last_close": ordered[-1]["close"],
         "bars": len(ordered),
     }
+```
+
+下面四根是构造的示例，用来看排序，不是接口返回。列表先写了较晚的一根，最早的 `open` 仍是 9，最晚的 `close` 是 12。
+
+```python
+sample = [
+    {"timestamp": 300, "open": 12, "high": 13, "low": 11, "close": 12.5},
+    {"timestamp": 100, "open": 9, "high": 10, "low": 8, "close": 9.5},
+    {"timestamp": 200, "open": 9.5, "high": 11, "low": 9, "close": 10.5},
+    {"timestamp": 400, "open": 12.5, "high": 12.5, "low": 12, "close": 12},
+]
 ```
 
 空列表得到空结果，不要用 0 填价格。`bars` 小于你传入的 `count`，只说明这次没有拿满上限。
