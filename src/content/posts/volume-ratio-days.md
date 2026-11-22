@@ -1,16 +1,21 @@
 ---
-title: 在同一列成交量里找量比偏高的交易日
-description: 用当日成交量除以它自己的 20 日均量，找出这组日线里量比最高的日子。不换算单位。
+title: 用成交量相对此前 20 日均量找偏高的交易日
+description: 当日成交量除以它前面 20 根日线的平均成交量。分母不含当天，也不要把这个数叫成量比。
 date: 2026-11-22
 category: 量化实战
 tags: [成交量, K线, pandas]
 ---
-量比在这里只比较同一列 `volume`。当日成交量除以过去 20 根的均量，单位前后相同，所以不必先知道它是手还是股。这组数来自一次 `klines.get`，不要和另一家接口的成交量混在一个分母里。
+这里要找的是：这一根日线的 `volume`，相对它前面 20 根的平均，高了多少。名字用“相对此前 20 日均量”。不要把它叫成量比。行情软件里的量比通常还会按已经开市的时间折算，那套算法本文不写。
 
-## 怎么算
+分子和分母都用同一次 `klines.get` 返回的 `volume`。不必先把它换成手或股。不要和另一家接口的成交量放进同一个分母。
+
+## 和示例页的滚动均量不同
+
+[示例代码](https://docs.quantdash.net/zh-Hans/sdk/python-examples.md) 用 `volume.rolling(20).mean()` 做分母。那个 20 根窗口含有当天自己。本文的分母是当天之前的 20 根，当天的放量不会先进入平均。两个数不会相同，不要把本文的结果说成示例页上的那个比值。
 
 ```python
-def volume_ratio(volumes: list[float]) -> list[float | None]:
+def relative_to_prior_20(volumes: list[float]) -> list[float | None]:
+    """当日成交量 / 此前 20 根的均量。窗口不含当天。"""
     out: list[float | None] = []
     for i, volume in enumerate(volumes):
         if i < 20:
@@ -22,14 +27,12 @@ def volume_ratio(volumes: list[float]) -> list[float | None]:
     return out
 
 
-def top_ratio_days(rows: list[dict], n: int = 3) -> list[dict]:
-    scored = [row for row in rows if row["vol_ratio"] is not None]
-    return sorted(scored, key=lambda row: row["vol_ratio"], reverse=True)[:n]
+def highest_days(rows: list[dict], n: int = 3) -> list[dict]:
+    scored = [row for row in rows if row["rel20"] is not None]
+    return sorted(scored, key=lambda row: row["rel20"], reverse=True)[:n]
 ```
 
-均量用的是当日之前的 20 根，不含当天。这样当天放量不会先把自己算进分母。下面的成交量是示例：前 20 根是 100，接着一根是 300。那一根的量比是 3。
-
-接到日线：
+下面的成交量是示例：前 20 根是 100，下一根是 300。那一根相对此前 20 根均量是 3。若把当天也放进 20 根窗口，分母就不再是 100。
 
 ```python
 import os
@@ -43,19 +46,19 @@ frame = qd.klines.get(
     adjust="none",
     to_dataframe=True,
 )
-frame["vol_ratio"] = volume_ratio(frame["volume"].tolist())
+frame["rel20"] = relative_to_prior_20(frame["volume"].tolist())
 ```
 
-这里用 `adjust="none"`。复权会改价格，成交量列仍以接口返回的 `volume` 为准，不要因为换了 `adjust` 就去改数量。
+`adjust="none"` 只固定价格口径。成交量仍用返回的 `volume`，不要因为换了复权就去改数量。
 
 ## 问答
 
-**问：量比大于 1 表示什么？**
+**问：这个数大于 1 表示什么？**
 
-答：只表示这一根的成交量高于它前面 20 根的平均。它不是资金流向，也不是策略收益。
+答：只表示这一根的成交量高于它前面 20 根的平均。它不是按开市时间折算的量比，也不是资金流向或策略收益。
 
-**问：能和 Tushare 的“手”一起做分母吗？**
+**问：为什么不直接用示例页的 rolling(20)？**
 
-答：不要。分母和分子都用这一次返回的 `volume`。
+答：可以用，但那个窗口含当天。本文要的是“和此前 20 根比”，所以分母不含当天。两套数请分开命名。
 
-> 思路与 [示例代码](https://docs.quantdash.net/zh-Hans/sdk/python-examples.md) 里的成交量比较相同。示例数量不是行情。
+> 日线来自 [获取 K 线](https://docs.quantdash.net/zh-hans/api-reference/k线数据/获取k线数据.md)。示例数量不是行情。
