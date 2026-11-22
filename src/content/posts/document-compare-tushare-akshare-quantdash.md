@@ -1,89 +1,82 @@
 ---
-title: 取同一段日线：Tushare、AKShare 和 QuantDash 怎么接到项目里
-description: 围绕个人量化里最常见的日线任务，说明三家在代码格式、复权、调用方式和后续维护上的差别，以及什么时候直接用我们的 K 线接口。
+title: 取同一段日线：Tushare、AKShare 和 QuantDash
+description: 同一项日线任务下，三家在代码、复权和调用方式上各是什么。后半说明什么时候用我们的 K 线，以及怎样按市场时区取出 A 股、港股、美股日线。
 date: 2026-11-16
 category: 常见问题
 tags: [选型, Tushare, AKShare, 行情数据]
 ---
-研究代码里最先需要的，通常是一段口径明确的日线：哪只标的、哪段日期、前复权还是不复权。Tushare、AKShare 和我们都能接到这个任务上，但代码写法、复权参数和维护方式不一样。这篇只谈日线怎么取、怎么放进自己的函数。更一般的选型问题见 [行情数据 API 怎么选](/posts/choose-market-data-api/)，免费来源的类型见 [免费 / 低成本股票数据接口常见问题](/posts/free-low-cost-stock-data-api-faq/)。
+很多研究都从同一件事开始：给出一段日期和一组标的，拿到口径清楚的日线。Tushare、AKShare 和我们都能做这件事，但代码、复权和调用位置不一样。下面先按这个共同任务对照，再把跨市场日线在 QuantDash 里的写法展开。选型时还要看的其他问题，见 [选行情 API 先看这 8 件事](/posts/choose-market-data-api/)。
 
-## 先把任务写成三件事
+## 对照的是日线任务，不是整家产品
 
-1. 标的用什么代码，换市场时要不要换接口。
-2. 价格是不复权、前复权还是后复权。
-3. 调用发生在你自己的进程里，还是请求一个带密钥的接口。
+表里每一行都只对“取日线”这一件事。某一行写的是对方的一个接口，不代表那家只有这一个接口。
 
-三件事对齐之后，策略层只保留一个 `get_daily`。下面按这个顺序看。
+| 对照点 | Tushare | AKShare | QuantDash |
+| --- | --- | --- | --- |
+| 这里用来对照的入口 | [`daily`](https://tushare.pro/document/2?doc_id=27)，页面标题是 A 股日线 | [`stock_zh_a_hist_em`](https://akshare.akfamily.xyz/data/stock/stock_quote.html)，说明为沪深京 A 股日频率 | `klines.get`，`period="1d"` |
+| 这个入口之外 | 同页写明还可以通过通用行情接口取含前后复权的数据。美股等其他行情不在 `daily` 这一页 | 股票文档里另有港股、美股等页面。换市场时要换对应函数，不是把港股代码塞进这个函数 | 日线类周期 `1d`、`1w`、`1M`、`1Q`、`1Y` 覆盖 A 股、美股、港股。换市场改后缀 |
+| 代码示例 | `000001.SZ`，日期 `YYYYMMDD` | `"603777"`，6 位，不带后缀 | `600519.SH`、`00700.HK`、`AAPL.US` |
+| 复权 | `daily` 是未复权。停牌期间不提供数据 | 默认不复权；`qfq` 前复权，`hfq` 后复权 | `forward` 前复权为默认，另有 `backward`、`forward_additive`、`backward_additive`、`none` |
+| 这一路数据怎么拿到 | 带 token 的接口。`daily` 最低 120 积分可以试用 | 在本机从公开网页采集。[项目说明](https://akshare.akfamily.xyz/introduction.html) 写明用于学术研究，商业使用需注意风险，网页改版后要更新库 | REST 或 Python SDK。Key 放在环境变量 `QUANTDASH_API_KEY` |
+| 当天的日线何时可取 | 交易日 15 点到 16 点入库 | 当日收盘价在收盘后获取 | K 线盘中会更新。这是 K 线的更新方式，不是单次请求要多久 |
+| 成交量和成交额 | 手，千元 | 手，元 | 字段是 `volume`、`amount` |
 
-## 代码和能覆盖的市场
+三家都能提供日线。差别在于你这次要的是不是“同一个调用、显式复权、标的可以跨市场”。只做 A 股未复权日线时，`daily` 就是按这个口径设计的。本地研究和学术脚本里，`stock_zh_a_hist_em` 也能直接给出沪深京日线。跨市场、并且希望复权写在参数里时，下面的写法是我们这边的用法。
 
-我们的日线用同一个 `klines.get`。代码带交易所后缀：`600519.SH`、`000001.SZ`、`00700.HK`、`AAPL.US`。日线类周期 `1d`、`1w`、`1M`、`1Q`、`1Y` 覆盖 A 股、美股、港股。换市场时改代码，不改函数。完整例子在 [一套代码取四个市场的 K 线](/posts/multi-market-klines/)。
+成交量单位不要混用。Tushare 和 AKShare 在各自页面上写了手和金额单位。我们的字段名是成交量和成交额，比较金额时先和你的研究单位对齐，再相加。
 
-[Tushare 的 daily](https://tushare.pro/document/2?doc_id=27) 是 A 股日线。示例代码是 `ts_code='000001.SZ'`，日期用 `YYYYMMDD`。页面写明这是未复权行情，停牌期间不提供数据，最低 120 积分可以试用。
+## 什么时候用我们的日线
 
-[AKShare 的 stock_zh_a_hist_em](https://akshare.akfamily.xyz/data/stock/stock_quote.html) 是东方财富的沪深京 A 股日频率数据。`symbol` 是不带后缀的代码，例如 `"603777"`；`period` 可以是 `daily`、`weekly`、`monthly`。这条接口不要拿去请求港股或美股。
+适合这几件事同时成立的时候：
 
-所以，只做沪深京日线时，三家都能接。要在 A 股、港股、美股之间用同一种调用，用我们的 `klines.get`，换后缀即可。
+- 标的里既有 A 股，也有港股或美股，你希望调用形式不变，只改代码后缀。
+- 复权要在请求里写明。不传 `adjust` 时，我们返回前复权比例。
+- 你希望用 SDK 直接得到 DataFrame，或用 REST 在别的语言里取同一份列式数据。
 
-## 复权要写在调用里
+不适合当成默认替换的时候也很明确。你的研究已经固定在 Tushare `daily` 的未复权 A 股上，就继续用那个接口，不要把我们的默认前复权当成同一列价格。你的脚本依赖 AKShare 某一页上的中文列名和网页数据，也按那一页的函数来，而不是改成我们的字段名就算迁移完成。这篇不讲怎么把现有工程迁过来。
 
-我们的 `adjust` 有五个取值：`forward`（前复权，比例，默认）、`backward`、`forward_additive`、`backward_additive`、`none`。不传参数时服务端按 `forward` 返回。接到别的数据源旁边时，请显式写上 `adjust`，避免默认前复权和对方的不复权混在一个文件里。比例复权和时间戳的细节见 [复权参数和时间戳](/posts/kline-adjust-and-timestamps/)。
+不同市场需要分别订阅。分钟线 `1m` 到 `60m` 标注的是 A 股，和日线的覆盖范围不是同一句话。
 
-Tushare 的 `daily` 返回未复权行情。成交量单位是手，成交额单位是千元。同一页提到可以通过通用行情接口取得前后复权数据；真要用复权价，打开那个接口的说明再接，不要把 `daily` 的收盘价当成前复权。
+## 按每个市场自己的时区取一段日线
 
-AKShare 这条日线默认不复权。文档示例里 `adjust=""` 是不复权，`qfq` 是前复权，`hfq` 是后复权。成交量单位是手，成交额单位是元。他们的说明还写了：前复权会在每次除权后重算历史价格，不同时间下载的前复权序列可能不同，持续分红时价格还可能为负。保存文件时把复权方式写进文件名。
+`start_time` 和 `end_time` 是毫秒时间戳，两端都包含。同一组 `YYYYMMDD`，A 股和北交所用上海时区，港股用香港时区，美股用美东时区。SDK 显示 `trade_date` 时也是这套后缀时区。美东有夏令时，用 `America/New_York`，不要写死减 5 小时。
 
-我们的字段说明写的是“成交量”和“成交额”，没有写成手或元。不要用 Tushare 的“千元”或 AKShare 的“元”去换算这一列。
-
-## 调用发生在哪里
-
-我们提供 REST 和 Python SDK。SDK 用 `pip install quantdash` 安装，`QuantDash()` 读取环境变量 `QUANTDASH_API_KEY`。K 线可以 `to_dataframe=True`，直接拿到 DataFrame。
-
-Tushare 用 `pro.daily(...)`。token 放在环境变量里再传给 `pro_api`，不要写进仓库。
-
-AKShare 在你本机运行，从公开网页采集数据。[项目说明](https://akshare.akfamily.xyz/introduction.html) 写明：接口和数据用于学术研究，商业使用需要自行注意风险；目标网页改版时要更新库。接到长期运行的任务里时，固定版本，升级前先跑自己的取数脚本。
-
-## 收成一个入口
-
-下面两个函数只处理代码和上海时区的日历日窗口。输入是示例，用来对齐日期，不是行情。
-
-```python
-from datetime import datetime
-from zoneinfo import ZoneInfo
-
-
-def split_a_share_symbol(symbol: str) -> tuple[str, str]:
-    """600519.SH -> ("600519", "SH")。只接受沪深京后缀。"""
-    code, _, suffix = symbol.partition(".")
-    if suffix not in {"SH", "SZ", "BJ"} or not code:
-        raise ValueError(f"不是沪深京代码: {symbol}")
-    return code, suffix
-
-
-def ymd_shanghai_day_bounds(ymd: str) -> tuple[int, int]:
-    """YYYYMMDD 收成上海时区当天的 00:00:00 和 23:59:59，单位毫秒。"""
-    tz = ZoneInfo("Asia/Shanghai")
-    year, month, day = int(ymd[0:4]), int(ymd[4:6]), int(ymd[6:8])
-    start = datetime(year, month, day, 0, 0, 0, tzinfo=tz)
-    end = datetime(year, month, day, 23, 59, 59, tzinfo=tz)
-    return int(start.timestamp() * 1000), int(end.timestamp() * 1000)
-```
-
-真正的请求按各家文档拼。Key 放在环境变量里。A 股可以走下面的分支；港股和美股日线走我们的分支，只换 `symbol`。
+跨市场时不要先合成一个毫秒再交给所有标的。`klines.batch` 的起止时间是同一对毫秒，适合同一市场的一批代码。下面按标的各自换算，再调用 `klines.get`。
 
 ```python
 import os
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from quantdash import QuantDash
+
+MARKET_TZ = {
+    "SH": "Asia/Shanghai",
+    "SZ": "Asia/Shanghai",
+    "BJ": "Asia/Shanghai",
+    "HK": "Asia/Hong_Kong",
+    "US": "America/New_York",
+}
 
 
-def get_daily(symbol: str, start: str, end: str, source: str, adjust: str = "none"):
-    """start、end 为 YYYYMMDD。symbol 使用 600519.SH 这种写法。"""
-    if source == "quantdash":
-        from quantdash import QuantDash
+def day_bounds_ms(symbol: str, ymd: str) -> tuple[int, int]:
+    """把 YYYYMMDD 收成该标的市场时区的 00:00:00 和 23:59:59，单位毫秒。"""
+    suffix = symbol.rsplit(".", 1)[-1]
+    tz = ZoneInfo(MARKET_TZ[suffix])
+    year, month, day = int(ymd[0:4]), int(ymd[4:6]), int(ymd[6:8])
+    start = datetime(year, month, day, tzinfo=tz)
+    end = datetime(year, month, day, 23, 59, 59, tzinfo=tz)
+    return int(start.timestamp() * 1000), int(end.timestamp() * 1000)
 
-        qd = QuantDash(api_key=os.environ["QUANTDASH_API_KEY"])
-        start_ms, _ = ymd_shanghai_day_bounds(start)
-        _, end_ms = ymd_shanghai_day_bounds(end)
-        return qd.klines.get(
+
+def daily_bars(symbols: list[str], start: str, end: str, adjust: str = "forward"):
+    """取多只标的的日线。adjust 请显式传入。"""
+    qd = QuantDash(api_key=os.environ["QUANTDASH_API_KEY"])
+    frames = {}
+    for symbol in symbols:
+        start_ms, _ = day_bounds_ms(symbol, start)
+        _, end_ms = day_bounds_ms(symbol, end)
+        frames[symbol] = qd.klines.get(
             symbol,
             period="1d",
             start_time=start_ms,
@@ -91,44 +84,28 @@ def get_daily(symbol: str, start: str, end: str, source: str, adjust: str = "non
             adjust=adjust,
             to_dataframe=True,
         )
-    code, _suffix = split_a_share_symbol(symbol)
-    if source == "tushare":
-        import tushare as ts
+    return frames
 
-        pro = ts.pro_api(os.environ["TUSHARE_TOKEN"])
-        # daily 是未复权。需要复权时改用 Tushare 文档中的复权接口。
-        return pro.daily(ts_code=symbol, start_date=start, end_date=end)
-    if source == "akshare":
-        import akshare as ak
 
-        ak_adjust = {"": "", "none": "", "forward": "qfq", "backward": "hfq"}[adjust]
-        return ak.stock_zh_a_hist_em(
-            symbol=code,
-            period="daily",
-            start_date=start,
-            end_date=end,
-            adjust=ak_adjust,
-        )
-    raise ValueError(f"未知数据源: {source}")
+watchlist = ["600519.SH", "00700.HK", "AAPL.US"]
+bars = daily_bars(watchlist, "20260501", "20260529", adjust="forward")
+for symbol, df in bars.items():
+    print(symbol, len(df), df["trade_date"].iloc[0], df["trade_date"].iloc[-1])
 ```
 
-日 K 的时间戳落在当天哪一分钟，文档没有规定。上面的窗口是上海日历日的闭区间，接到数据后看一眼 `trade_date`，再决定要不要收窄 `end_time`。
+`20260501` 到 `20260529` 是日历日示例，不是一份已核对过的交易日清单。返回的 `trade_date` 才是这只标的的交易日。接到数据后看首尾日期是否落在你要的区间里；日 K 的时间戳落在当天哪一分钟，以返回的 `timestamp` 为准。
 
-## 怎么选
-
-- 沪深京、港股、美股日线要放在同一次调用里：用我们的 `klines.get`，显式传入 `adjust`。
-- 已经在用 Tushare 的 A 股未复权日线：继续 `daily`，成交额按千元换算，复权不要假定已经做好。
-- 本地脚本、学术研究、并且接受随网页改版升级库：可以用 `stock_zh_a_hist_em`，把复权参数和库版本记在缓存文件旁。
+保存时把 `adjust` 写进文件名。前复权序列会在新的除权之后变化，下载日期也一起记下。复权取值和时区的进一步说明在 [复权参数和时间戳](/posts/kline-adjust-and-timestamps/)。四个市场的最小循环在 [一套代码取四个市场的 K 线](/posts/multi-market-klines/)。
 
 ## 问答
 
-**问：三家的日线收盘价能直接比吗？**
-答：先看复权。Tushare `daily` 和 AKShare 的默认结果都是不复权。我们不传 `adjust` 时返回前复权。比较前把三边都设成同一种口径。
+**问：三家日线的收盘价能放进同一列吗？**
+答：先把复权说成同一种。`daily` 和 `stock_zh_a_hist_em` 的默认结果是不复权。我们不传 `adjust` 时是前复权。要和未复权价比较，请求里写 `adjust="none"`。
 
-**问：港股代码能传给 AKShare 的这条日线吗？**
-答：不能。`stock_zh_a_hist_em` 的说明是沪深京 A 股。港股、美股日线用我们的后缀代码，例如 `00700.HK`、`AAPL.US`。
+**问：AKShare 是不是不能取港股？**
+答：不能这样说。`stock_zh_a_hist_em` 这一条是沪深京日线。港股、美股在 AKShare 的其他页面。我们这边港股日线用 `00700.HK` 这种后缀，走同一个 `klines.get`。
 
-**问：成交额为什么对不上？**
-答：Tushare `daily` 的成交额是千元，AKShare 这条日线是元。我们的文档没有写单位，不要套用这两边的换算。
+**问：快照约 3 秒刷新，是不是这次日线请求只要 3 秒？**
+答：不是。约 3 秒是实时快照的刷新间隔。日线请求自己的耗时是另一件事。K 线盘中会更新，指的是盘中的 K 线还在变化。
 
-> 行情接口的用法以各家文档为准。我们的参数说明见 [中文文档](https://docs.quantdash.net/zh-Hans)。本文不构成投资建议。
+> 参数以 [中文文档](https://docs.quantdash.net/zh-Hans) 为准。Tushare、AKShare 的行为以文中链接的页面为准。本文不构成投资建议。
