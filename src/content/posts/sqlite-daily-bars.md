@@ -59,7 +59,7 @@ def upsert_daily(conn: sqlite3.Connection, rows: list[dict]) -> None:
 
 ## 示例行和取数
 
-下面两行是构造的，用来看主键，不是行情。
+下面这一行是构造的，用来看主键，不是行情。
 
 ```python
 sample = [
