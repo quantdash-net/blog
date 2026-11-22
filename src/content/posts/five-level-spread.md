@@ -25,6 +25,9 @@ def book_view(book: dict) -> dict:
         if len(book[name]) != 5:
             issues.append(f"{name} 不是 5 档")
     bids, asks = book["bid_prices"], book["ask_prices"]
+    if not bids or not asks:
+        issues.append("买价或卖价为空")
+        return {"bid1": None, "ask1": None, "spread": None, "issues": issues}
     if any(bids[i] < bids[i + 1] for i in range(len(bids) - 1)):
         issues.append("买价不是从买1到买5降序")
     if any(asks[i] > asks[i + 1] for i in range(len(asks) - 1)):
@@ -37,7 +40,7 @@ def book_view(book: dict) -> dict:
     }
 ```
 
-价差用卖一减买一。档位价格可以相等，所以这里只把买价变高、卖价变低当成顺序问题。数量为 0 时仍保留这一档，不要把空档删掉再比较。
+价差用卖一减买一。买价或卖价是空数组时，先记下问题并返回，不读取第一档。档位价格可以相等，所以这里只把买价变高、卖价变低当成顺序问题。数量为 0 时仍保留这一档，不要把空档删掉再比较。
 
 调用写成：
 
