@@ -28,9 +28,15 @@ def at_limit(last_price: float, limit_price: float | None) -> bool:
 
 def sealed(at_price: bool, first_level_volume: int) -> bool:
     return at_price and first_level_volume == 0
+
+
+def side_sealed(at_price: bool, volumes: list[int]) -> bool:
+    if not volumes:
+        return False
+    return sealed(at_price, volumes[0])
 ```
 
-涨停一侧是 `sealed(at_limit(last, limit_up), ask_volumes[0])`。跌停一侧把 `limit_down` 和 `bid_volumes[0]` 换进去。最新价离涨停价还有距离时，卖一数量即使是 0，也不把这只标的算成涨停一侧的启发式命中。
+涨停一侧先看 `ask_volumes` 有没有第一档。没有就不算封板，也不读取 `[0]`。有了再用 `side_sealed(at_limit(last, limit_up), ask_volumes)`。跌停一侧换成 `limit_down` 和 `bid_volumes`。最新价离涨停价还有距离时，卖一数量即使是 0，也不把这只标的算成涨停一侧的启发式命中。
 
 ```python
 import os
@@ -42,7 +48,7 @@ inst = qd.instruments.get("600519.SH")
 book = qd.depth.get("600519.SH")
 limit_up = inst.get("ext", {}).get("limit_up")
 hit = at_limit(quote["last_price"], limit_up)
-print(hit, sealed(hit, book["ask_volumes"][0]))
+print(hit, side_sealed(hit, book["ask_volumes"]))
 ```
 
 `quotes.get` 只能在 `symbols` 和 `universes` 里选一个。看自选就传代码，看全 A 股再传 `universes=["CN_Stock"]`。
