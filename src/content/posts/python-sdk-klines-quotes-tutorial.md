@@ -5,9 +5,9 @@ date: 2026-11-12
 category: 接口教程
 tags: [Python SDK, K线, 实时行情, pandas, 入门]
 ---
-上一篇 [klines.get 入门](/posts/multi-market-klines/) 讲了"一个调用取四个市场的日 K"。这篇往前后各延伸一步：前面补上环境搭建和鉴权的规范做法，后面补上时间区间、批量、日内分时、实时快照和 pandas 处理，最后把它们组织成一个**可以直接放进项目里的取数模块**。
+上一篇 [klines.get 入门](/posts/multi-market-klines/) 讲了用一个调用取四个市场的日 K。这篇把环境、鉴权、时间区间、批量、日内分时、实时快照和 pandas 收成一个可以直接放进项目的取数模块。
 
-本文所有接口名、参数和取值都来自 [QuantDash 中文文档](https://docs.quantdash.net/zh-Hans) 的 Python SDK 快速开始页和 API 参考。代码示例中的 API Key 一律从环境变量读取，请不要把真实 Key 写进代码或提交到 Git。
+参数和取值以我们的 [中文文档](https://docs.quantdash.net/zh-Hans) 为准。示例里的 API Key 从环境变量读取，不要写进代码或提交到 Git。
 
 ## 第一步：准备 Python 环境
 
@@ -325,18 +325,23 @@ quotes = safe_call(snapshot, universe="HK_Stock")
 ## 问答小结
 
 **问：QuantDash Python SDK 怎么安装和鉴权？**
+
 答：`pip install quantdash`（Python 3.9+），设置环境变量 `QUANTDASH_API_KEY` 后用 `QuantDash()` 初始化即可，不需要在代码里写 Key。
 
 **问：一次请求能取多少根 K 线，更长的历史怎么取？**
+
 答：REST 文档中 `count` 默认 100、最大 10000。更长的历史可以用毫秒时间戳 `start_time`、`end_time` 分段请求再拼接。
 
 **问：`klines.get` 的分钟线和 `klines.intraday` 有什么区别？**
+
 答：`klines.get(period="5m")` 是可按时间区间回溯的历史分钟 K 线；`klines.intraday` 返回当日分钟级走势，适合盘中使用。文档标注分钟 K 线适用于 A 股。
 
 **问：怎样一次拿到整个市场的实时行情？**
+
 答：用 `qd.quotes.get(universes=["CN_Stock"])`，标的池还有 `CN_ETF`、`US_Stock`、`HK_Stock`。文档写明快照约 3 秒刷新一次，这是刷新频率，不是接口响应时间。
 
 **问：遇到 403 和 429 分别怎么处理？**
+
 答：403 表示当前方案不包含该功能或市场，需要检查订阅；429 表示请求频率超限，应降低频率、改用批量接口，并参考返回中的 `retry_after_ms` 等待后重试。
 
 > 行情数据和示例代码仅用于开发、研究与接口演示，不构成投资建议。完整参数说明见 [QuantDash 中文文档](https://docs.quantdash.net/zh-Hans)。

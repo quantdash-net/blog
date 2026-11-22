@@ -1,6 +1,6 @@
 ---
 title: K 线入库前可以本地做的质量检查
-description: 在不调用接口的前提下，检查列式 K 线的字段长度、OHLC 关系、时间顺序和复权标记。规则来自 OpenAPI 的字段定义，并用假数据在本地跑过。
+description: 入库前检查列式 K 线的字段长度、OHLC 关系、时间顺序和复权标记。规则对应我们的 K 线字段，示例数字用来演示检查函数。
 date: 2026-11-16
 category: 量化实战
 tags: [数据质量, K线, 复权]
@@ -15,12 +15,11 @@ tags: [数据质量, K线, 复权]
 
 字段说明没有写成交量和成交额的单位，也没有写停牌日是缺一行还是保留一行。因此下面的函数只检查结构，不把“中间少了一个自然日”判成错误，也不把成交量换算成手或股。
 
-## 用假数据检查列式结构
+## 用示例数字检查列式结构
 
-这段代码不导入 `quantdash`，也不读取环境变量。本文用构造的数组执行过。
+下面的数组是构造出来的示例，用来拦住缺字段、乱序，以及最高价装不下开盘和收盘的情况。它不是某次接口返回。
 
 ```python
-# local-check
 REQUIRED_KLINE_FIELDS = ("timestamp", "open", "high", "low", "close", "volume", "amount")
 
 
@@ -61,13 +60,13 @@ def kline_issues(data: dict) -> list[str]:
 
 ## 复权标记要和数组一起保存
 
-OpenAPI 的默认复权是 `forward`。同一标的的两次数组，如果一次省略 `adjust`、一次传入 `none`，结构检查都会通过，价格却不是一个口径。入库时把请求里的 `adjust`、`period` 和 `symbol` 写进文件名或相邻的一列。缓存前复权序列时再记一下下载日期：AKShare 的日线文档明确写过，前复权历史价会随新的除权变化；QuantDash 文档没有写缓存多久失效，所以不要假定本地的 `forward` 文件会一直等于重新下载的结果。
+OpenAPI 的默认复权是 `forward`。同一标的的两次数组，如果一次省略 `adjust`、一次传入 `none`，结构检查都会通过，价格却不是一个口径。入库时把请求里的 `adjust`、`period` 和 `symbol` 写进文件名或相邻的一列。缓存前复权序列时记一下下载日期。新的除权之后，前复权历史价会变，本地文件要重新下载，或对照除权因子里新出现的日期。我们没有给出用 `ex_factor` 还原 OHLC 的公式，对账时直接比较 `adjust="none"` 和 `adjust="forward"` 的价格。
 
-除权因子可以用来发现“之后多了一次除权”。`ex_factors` 的每条记录是毫秒时间戳和 `ex_factor`。把新拉到的因子日期与上次保存的日期对比，多出来的日期说明需要重看复权价格。文档没有给出用因子还原 OHLC 的公式，对账时仍然要看 `adjust="none"` 与 `adjust="forward"` 的实际价格。
+`ex_factors` 的每条记录是毫秒时间戳和 `ex_factor`。新出现的除权日，就是该重新看复权价格的时候。
 
-## SDK DataFrame 会多做两件事
+## SDK DataFrame 会多做三件事
 
-以下行为来自已安装的 `quantdash` 0.1.0 源码，没有对 `api.quantdash.net` 发请求：
+Python SDK 0.1.0 在 `to_dataframe=True` 时还会做这些事：
 
 - `to_dataframe=True` 时，若响应字典里没有 `amount`，这一列会被填成 0。OpenAPI 将 `amount` 列为必填，按规范不应缺失。若真的缺失，DataFrame 里的 0 无法表示“字段不存在”。结构检查应针对 REST 的 `data` 字典，或针对 `to_dataframe=False` 的返回值。
 - DataFrame 不包含 `prev_close`。
@@ -76,7 +75,6 @@ OpenAPI 的默认复权是 `forward`。同一标的的两次数组，如果一�
 `trade_date` 由毫秒时间戳按代码后缀的时区格式化。检查时可以重算一遍，和返回列对比：
 
 ```python
-# local-check
 def trade_dates_match(symbol: str, timestamps: list[int], trade_dates: list[str]) -> list[str]:
     issues = []
     for i, (ts, label) in enumerate(zip(timestamps, trade_dates)):
@@ -95,12 +93,15 @@ def trade_dates_match(symbol: str, timestamps: list[int], trade_dates: list[str]
 ## 问答
 
 **问：这些检查通过，能不能说明价格是对的？**
-答：不能。它们只检查文档里的数组结构、时间顺序和非负约束。和交易所逐笔对账需要另一路数据，本文没有做。
+
+答：不能。它们检查的是数组结构、时间顺序和非负约束。和交易所逐笔核对要另备数据。
 
 **问：为什么不把自然日缺口当成错误？**
+
 答：文档没有说明停牌日是否占一行。周末和停牌都会让交易日之间出现自然日间隔。缺口可以记下来，再对照交易所的交易日历。
 
 **问：检查 SDK 的 DataFrame 和检查原始 data 一样吗？**
+
 答：0.1.0 会在缺少 `amount` 时填 0，并且不保留 `prev_close`。字段是否存在，以原始字典为准。
 
-> 检查函数用的是构造数据。接口字段以 [K 线 OpenAPI](https://docs.quantdash.net/zh-hans/api-reference/k线数据/获取k线数据.md) 为准。
+> 字段以 [K 线接口](https://docs.quantdash.net/zh-hans/api-reference/k线数据/获取k线数据.md) 为准。示例数字不是行情。
