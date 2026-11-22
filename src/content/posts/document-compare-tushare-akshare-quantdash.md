@@ -100,12 +100,15 @@ for symbol, df in bars.items():
 ## 问答
 
 **问：三家日线的收盘价能放进同一列吗？**
+
 答：先把复权说成同一种。`daily` 和 `stock_zh_a_hist_em` 的默认结果是不复权。我们不传 `adjust` 时是前复权。要和未复权价比较，请求里写 `adjust="none"`。
 
 **问：AKShare 是不是不能取港股？**
+
 答：不能这样说。`stock_zh_a_hist_em` 这一条是沪深京日线。港股、美股在 AKShare 的其他页面。我们这边港股日线用 `00700.HK` 这种后缀，走同一个 `klines.get`。
 
 **问：快照约 3 秒刷新，是不是这次日线请求只要 3 秒？**
+
 答：不是。约 3 秒是实时快照的刷新间隔。日线请求自己的耗时是另一件事。K 线盘中会更新，指的是盘中的 K 线还在变化。
 
 > 参数以 [中文文档](https://docs.quantdash.net/zh-Hans) 为准。Tushare、AKShare 的行为以文中链接的页面为准。本文不构成投资建议。

@@ -93,12 +93,15 @@ def trade_dates_match(symbol: str, timestamps: list[int], trade_dates: list[str]
 ## 问答
 
 **问：这些检查通过，能不能说明价格是对的？**
+
 答：不能。它们检查的是数组结构、时间顺序和非负约束。和交易所逐笔核对要另备数据。
 
 **问：为什么不把自然日缺口当成错误？**
+
 答：文档没有说明停牌日是否占一行。周末和停牌都会让交易日之间出现自然日间隔。缺口可以记下来，再对照交易所的交易日历。
 
 **问：检查 SDK 的 DataFrame 和检查原始 data 一样吗？**
+
 答：0.1.0 会在缺少 `amount` 时填 0，并且不保留 `prev_close`。字段是否存在，以原始字典为准。
 
 > 字段以 [K 线接口](https://docs.quantdash.net/zh-hans/api-reference/k线数据/获取k线数据.md) 为准。示例数字不是行情。

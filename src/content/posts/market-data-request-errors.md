@@ -122,12 +122,15 @@ missing = [symbol for symbol in requested if symbol not in result]
 ## 问答
 
 **问：403 应该换一个 Key 再试吗？**
+
 答：文档把 401 定义为 Key 无效或缺失，把 403 定义为套餐不含该功能或市场。403 应停止并核对订阅，而不是更换 Key 后立即重试。
 
 **问：SDK 会不会按照 retry_after_ms 休眠？**
+
 答：0.1.0 的重试休眠使用指数退避和抖动，不读取 `retry_after_ms`，异常对象也不保存这个字段。要使用文档中的等待时间，需要读取 REST 响应体。
 
 **问：批量接口返回的字典变短，算不算异常？**
+
 答：0.1.0 不会因为部分分块失败而抛出。短字典要和请求列表比较后单独处理。
 
 > 状态码见 [REST 说明](https://docs.quantdash.net/zh-Hans/api-reference/introduction.md)。重试行为对应 Python SDK 0.1.0。

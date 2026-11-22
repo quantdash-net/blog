@@ -127,12 +127,15 @@ df = qd.klines.get(
 ## 问答
 
 **问：不写 adjust 会得到不复权数据吗？**
+
 答：不会。OpenAPI 把 `adjust` 的默认值写成 `forward`。不复权要显式传 `adjust="none"`。
 
 **问：为什么同一段日期在另一台机器上多出或少掉一天？**
+
 答：不带时区的 `datetime.timestamp()` 使用机器本地时区。UTC 机器上的 2026-05-01 零点比上海零点晚 8 小时。区间又是闭区间，端点差这 8 小时就可能多含或少含一根 K 线。
 
 **问：除权因子能不能直接乘到收盘价上？**
+
 答：文档没有公布这个算式。因子接口只说明返回 `timestamp` 和 `ex_factor`，并写明可用于计算复权价格。
 
 > 参数说明见 [K 线文档](https://docs.quantdash.net/zh-hans/api-reference/k线数据/获取k线数据.md) 和 [SDK 快速开始](https://docs.quantdash.net/zh-Hans/sdk/python-quickstart.md)。文中的价格序列只用来区分乘法和减法，不是行情，也不是投资建议。

@@ -325,18 +325,23 @@ quotes = safe_call(snapshot, universe="HK_Stock")
 ## 问答小结
 
 **问：QuantDash Python SDK 怎么安装和鉴权？**
+
 答：`pip install quantdash`（Python 3.9+），设置环境变量 `QUANTDASH_API_KEY` 后用 `QuantDash()` 初始化即可，不需要在代码里写 Key。
 
 **问：一次请求能取多少根 K 线，更长的历史怎么取？**
+
 答：REST 文档中 `count` 默认 100、最大 10000。更长的历史可以用毫秒时间戳 `start_time`、`end_time` 分段请求再拼接。
 
 **问：`klines.get` 的分钟线和 `klines.intraday` 有什么区别？**
+
 答：`klines.get(period="5m")` 是可按时间区间回溯的历史分钟 K 线；`klines.intraday` 返回当日分钟级走势，适合盘中使用。文档标注分钟 K 线适用于 A 股。
 
 **问：怎样一次拿到整个市场的实时行情？**
+
 答：用 `qd.quotes.get(universes=["CN_Stock"])`，标的池还有 `CN_ETF`、`US_Stock`、`HK_Stock`。文档写明快照约 3 秒刷新一次，这是刷新频率，不是接口响应时间。
 
 **问：遇到 403 和 429 分别怎么处理？**
+
 答：403 表示当前方案不包含该功能或市场，需要检查订阅；429 表示请求频率超限，应降低频率、改用批量接口，并参考返回中的 `retry_after_ms` 等待后重试。
 
 > 行情数据和示例代码仅用于开发、研究与接口演示，不构成投资建议。完整参数说明见 [QuantDash 中文文档](https://docs.quantdash.net/zh-Hans)。
