@@ -1,45 +1,49 @@
 ---
-title: 用日线收盘价算 14 日 RSI
-description: 按示例里的算法，用收盘价的涨跌计算 14 日 RSI。示例序列单独标出，不把它当成接口结果。
+title: 用日线收盘价算 14 日简单平均 RSI
+description: 用最近 14 根涨跌的简单平均计算 RSI，也就是 Cutler 算法。说明它和 Wilder 平滑不是同一个数，并写明除零时怎么处理。
 date: 2026-11-22
 category: 量化实战
 tags: [RSI, K线, pandas]
 ---
-RSI 用的是同一列收盘价的涨跌，不需要另一路行情。示例代码用 14 日平均涨幅和平均跌幅来算。日线从 `klines.get(..., period="1d")` 来，复权要先定下来。这篇用 `adjust="forward"`，因为要比的是收益率方向的连续价格。
+RSI 用同一列收盘价的涨跌来算，接口本身没有这个字段。日线用 `klines.get(..., period="1d", adjust="forward")`。先固定复权，再算。前复权适合看收益率方向的连续价格。
 
-## 算法
+## 这是简单平均，不是 Wilder 平滑
 
-对收盘价做差分。涨的部分留下，跌的部分取绝对值。两边都做 14 日简单滚动平均，再算 `100 - 100 / (1 + 平均涨幅 / 平均跌幅)`。平均跌幅为 0 时，这一行不要硬除。
+[示例代码](https://docs.quantdash.net/zh-Hans/sdk/python-examples.md) 把 14 根涨幅和 14 根跌幅各自做滚动平均，再计算 `100 - 100 / (1 + 平均涨幅 / 平均跌幅)`。滚动平均是这 14 根的简单算术平均。这种算法通常叫 Cutler RSI。
+
+Wilder RSI 不用这 14 根的简单平均，而是把更早的平均值平滑进当前一根。两套数不同。本文只实现简单平均，不把它叫成 Wilder，也不说和示例页上印出的那几行输出逐项相同。示例页直接做除法，没有单独写平均跌幅为 0 时的结果。
+
+本文的边界是：
+
+- 涨跌差分还不满 14 根：留空。
+- 这 14 根里既没有上涨也没有下跌：留空，避免 0 除 0。
+- 这 14 根只有上涨、平均跌幅为 0：记为 100。
+- 其余情况按上面的公式，保留两位小数。
 
 下面的收盘价是构造的示例，不是某次 `klines.get` 的返回。
 
 ```python
 def rsi_14(closes: list[float]) -> list[float | None]:
+    """14 根涨跌的简单平均 RSI。不足、全平留空；只有上涨记 100。"""
     out: list[float | None] = [None]
     gains: list[float] = []
     losses: list[float] = []
     for prev, cur in zip(closes, closes[1:]):
         delta = cur - prev
-        gains.append(delta if delta > 0 else 0.0)
-        losses.append(-delta if delta < 0 else 0.0)
+        gains.append(max(delta, 0.0))
+        losses.append(max(-delta, 0.0))
         if len(gains) < 14:
             out.append(None)
             continue
-        window_g = gains[-14:]
-        window_l = losses[-14:]
-        avg_gain = sum(window_g) / 14
-        avg_loss = sum(window_l) / 14
+        avg_gain = sum(gains[-14:]) / 14
+        avg_loss = sum(losses[-14:]) / 14
         if avg_loss == 0:
-            out.append(None)
-        else:
-            rs = avg_gain / avg_loss
-            out.append(round(100 - 100 / (1 + rs), 2))
+            out.append(None if avg_gain == 0 else 100.0)
+            continue
+        rs = avg_gain / avg_loss
+        out.append(round(100 - 100 / (1 + rs), 2))
     return out
 ```
-
-前 14 根差分凑不满窗口时，结果是空。这和滚动平均要满 14 个数是一回事。
-
-接到日线之后：
 
 ```python
 import os
@@ -53,19 +57,19 @@ frame = qd.klines.get(
     adjust="forward",
     to_dataframe=True,
 )
-frame["rsi"] = rsi_14(frame["close"].tolist())
+frame["rsi14"] = rsi_14(frame["close"].tolist())
 ```
 
-`count=60` 够算出末尾一段 14 日 RSI。换复权口径会改收盘价，RSI 也会变，所以列名或文件名里写上 `forward`。
+`count=60` 让末尾有一段已经满 14 根差分的结果。换 `adjust` 会改收盘价，RSI 也会变。文件名里写上 `forward`。
 
 ## 问答
 
-**问：这个 RSI 是接口字段吗？**
+**问：这个 RSI 是接口返回的字段吗？**
 
-答：不是。接口给的是 OHLCV。RSI 在本地用收盘价算。
+答：不是。接口给 OHLCV。这里用收盘价在本地计算。
 
-**问：不复权收盘价能直接套进同一个函数吗？**
+**问：为什么有的窗口是 100，有的是空？**
 
-答：能，但那是另一种口径。除权日的价格跳变会进差分。要看收益率方向，用 `adjust="forward"`。
+答：不满 14 根差分，或者 14 根里完全没有涨跌，留空。14 根里只有上涨、没有下跌，记 100。这是为了不除以 0，不是 Wilder 公式的规定。
 
-> 算法与 [示例代码](https://docs.quantdash.net/zh-Hans/sdk/python-examples.md) 中的 14 日 RSI 相同。示例收盘价不是行情，结果也不构成投资建议。
+> 日线参数见 [获取 K 线](https://docs.quantdash.net/zh-hans/api-reference/k线数据/获取k线数据.md)。示例收盘价不是行情，结果也不构成投资建议。
