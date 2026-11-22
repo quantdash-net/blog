@@ -36,6 +36,8 @@ def bollinger_20(closes: list[float]) -> list[dict]:
 
 这里的标准差用窗口里 19 做分母，和 pandas `Series.std()` 的默认口径一致。示例最后一根的均线会高于 10，上轨在均线之上，下轨在均线之下。
 
+示例页先把标准差四舍五入到两位，再用这个已舍入的值去加减。本文只在均线和上下轨上各舍入一次。同一组收盘价的上下轨因此可能差在小数的最后一位。窗口都是含当天的 20 根，不要把两边打印出来的小数说成逐项相同。
+
 ```python
 import os
 from quantdash import QuantDash
@@ -66,4 +68,4 @@ frame["lower"] = [row["lower"] for row in bands]
 
 答：可以调用，但默认是前复权。要和另一份不复权收盘价比，两边都写上同一个 `adjust`。
 
-> 算法与 [示例代码](https://docs.quantdash.net/zh-Hans/sdk/python-examples.md) 中的 20 日布林带相同。示例收盘价不是行情，也不构成投资建议。
+> 窗口和两倍标准差见 [示例代码](https://docs.quantdash.net/zh-Hans/sdk/python-examples.md)。示例收盘价不是行情，也不构成投资建议。
